@@ -2,7 +2,9 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="HandheldFriendly" content="true">
+  <meta name="MobileOptimized" content="width">
   <title>Đăng Nhập • FAROS SYSTEM</title>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -15,9 +17,12 @@
       --danger-neon: #ff453a;
     }
     
-    /* FIX DPI: Khóa font size gốc theo tỷ lệ màn hình, chống biến dạng khi đổi DPI */
+    /* FIX DPI: Khóa hoàn toàn font size, không bị ảnh hưởng bởi DPI hệ thống */
     html {
-      font-size: clamp(14px, 3.5vw, 17px);
+      font-size: 16px !important;
+      -webkit-text-size-adjust: 100% !important;
+      -moz-text-size-adjust: 100% !important;
+      text-size-adjust: 100% !important;
     }
 
     * { 
@@ -199,6 +204,16 @@
     </div>
   </div>
 
+  <div class="modal-overlay" id="infoModal">
+    <div class="modal-box" style="border-color: rgba(255,165,0,0.35); box-shadow: 0 15px 40px rgba(255,165,0,0.12);">
+      <div class="modal-title" style="color: #ff9f0a; border-bottom-color: rgba(255,159,10,0.2); text-shadow: 0 0 10px rgba(255,159,10,0.3);">⚠️ THÔNG BÁO</div>
+      <div class="modal-text" id="infoModalMessage" style="text-align: center; color: #fff; padding: 10px 0;"></div>
+      <div class="modal-actions">
+        <button class="btn-modal" id="btnInfoClose" style="background: linear-gradient(135deg, #ff9f0a, #cc7a00); color: #fff; width: 100%;">TÔI ĐÃ HIỂU</button>
+      </div>
+    </div>
+  </div>
+
   <div class="modal-overlay" id="errorModal">
     <div class="modal-box">
       <div class="modal-title" id="errorModalTitle">THÔNG BÁO HỆ THỐNG</div>
@@ -245,7 +260,8 @@
         customPromptModal.classList.remove('active');
         window.location.href = 'https://zalo.me/0389148483';
       } else {
-        alert("Mã xác nhận không chính xác! Vui lòng kiểm tra lại.");
+        document.getElementById('infoModalMessage').innerHTML = "Mã xác nhận không chính xác!<br>Vui lòng kiểm tra lại.";
+        document.getElementById('infoModal').classList.add('active');
       }
     });
 
@@ -279,6 +295,9 @@
     const myDeviceId = localStorage.getItem('deviceId');
 
     const errorModal = document.getElementById('errorModal');
+    document.getElementById('btnInfoClose').addEventListener('click', () => {
+      document.getElementById('infoModal').classList.remove('active');
+    });
     const errorModalMessage = document.getElementById('errorModalMessage');
     const btnErrorClose = document.getElementById('btnErrorClose');
 
