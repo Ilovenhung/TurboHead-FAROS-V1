@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Lấy Key Thành Công • FAROS</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <style>
+    :root {
+      --bg: #0b0b14; --surface: rgba(20, 20, 38, 0.85); --glass-border: rgba(255, 255, 255, 0.12);
+      --text: #f0f0f8; --text-secondary: #b0b0c8; --ios-blue: #0a84ff; --radius-lg: 28px;
+      --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+      --shadow-glass: 0 8px 30px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.08);
+      --success: #30d158; --danger: #ff453a;
+    }
+    
+    * { 
+      margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; 
+      user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; 
+    }
+    
+    body {
+      font-family: var(--font); background: var(--bg);
+      background-image: radial-gradient(ellipse at 50% 0%, rgba(48,209,88,0.1) 0%, transparent 60%), 
+                        radial-gradient(ellipse at 50% 100%, rgba(10,132,255,0.08) 0%, transparent 60%);
+      color: var(--text); min-height: 100vh; display: flex; justify-content: center; align-items: center;
+      padding: 20px; overflow: hidden;
+    }
+    
+    #dustCanvas { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+    
+    .glass-panel { 
+      background: var(--surface); backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px); 
+      border: 1.5px solid var(--glass-border); border-radius: var(--radius-lg); 
+      padding: 35px 24px; width: 100%; max-width: 400px; box-shadow: var(--shadow-glass); 
+      text-align: center; display: none; /* Sẽ được bật nếu check pass referrer */
+      flex-direction: column; align-items: center;
+    }
+    
+    /* Trạng thái lỗi (Truy cập trực tiếp) */
+    .error-panel {
+      display: flex; flex-direction: column; align-items: center; text-align: center;
+    }
+    .error-icon { font-size: 3rem; margin-bottom: 15px; }
+    .error-title { color: var(--danger); font-weight: 800; font-size: 1.3rem; margin-bottom: 10px; }
+    .error-desc { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5; }
+
+    /* Giao diện chúc mừng */
+    .icon-success { font-size: 3.5rem; margin-bottom: 10px; animation: popIn 0.5s ease; }
+    @keyframes popIn { 0% { transform: scale(0); } 80% { transform: scale(1.1); } 100% { transform: scale(1); } }
+    
+    .title { font-weight: 900; font-size: 1.4rem; color: #fff; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 0 15px rgba(48,209,88,0.4); }
+    .subtitle { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5; margin-bottom: 25px; }
+    
+    .info-box { background: rgba(255, 255, 255, 0.05); border: 1px dashed rgba(255,255,255,0.2); border-radius: 12px; padding: 15px; margin-bottom: 25px; width: 100%; }
+    .info-box p { font-size: 0.85rem; color: #ddd; margin: 5px 0; }
+    .info-box span { color: var(--success); font-weight: bold; }
+
+    /* Nút tạo Key */
+    .btn-generate { 
+      width: 100%; padding: 16px; background: linear-gradient(135deg, #30d158, #249941); 
+      border: none; border-radius: 14px; color: #fff; font-weight: 800; font-size: 1.05rem; 
+      cursor: pointer; transition: 0.2s; letter-spacing: 0.5px; box-shadow: 0 5px 15px rgba(48,209,88,0.3);
+    }
+    .btn-generate:active { transform: scale(0.96); }
+    .btn-generate:disabled { background: #444; color: #888; cursor: not-allowed; box-shadow: none; }
+
+    /* Thanh tiến trình */
+    .progress-wrapper { width: 100%; margin-top: 20px; display: none; flex-direction: column; align-items: center; }
+    .progress-bar-bg { width: 100%; height: 12px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden; position: relative; }
+    .progress-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #0a84ff, #30d158); transition: width 0.1s linear; }
+    .progress-text { margin-top: 10px; font-size: 0.9rem; font-weight: bold; color: var(--ios-blue); }
+
+    /* Kết quả Key */
+    .result-wrapper { width: 100%; margin-top: 20px; display: none; animation: popIn 0.4s ease; }
+    .key-display { 
+      width: 100%; padding: 15px; background: rgba(0,0,0,0.5); border: 2px solid var(--success); 
+      border-radius: 12px; color: #fff; font-size: 1.2rem; font-family: monospace; letter-spacing: 2px; 
+      text-align: center; margin-bottom: 12px;
+      user-select: text !important; -webkit-user-select: text !important;
+    }
+    .btn-copy {
+      width: 100%; padding: 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 10px; color: #fff; font-weight: bold; cursor: pointer; transition: 0.2s;
+    }
+    .btn-copy:hover { background: rgba(255,255,255,0.2); }
+    .btn-copy:active { transform: scale(0.96); }
+
+    /* Thông báo hết hạn */
+    #expiredMessage {
+      width: 100%; margin-top: 20px;
+    }
+    #expiredMessage .box {
+      background: rgba(255,69,58,0.15);
+      border: 1px solid var(--danger);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    #expiredMessage .box .big-icon { font-size: 2rem; margin-bottom: 10px; }
+    #expiredMessage .box .title-expired { font-weight: bold; color: var(--danger); font-size: 1.1rem; }
+    #expiredMessage .box .desc { color: var(--text-secondary); font-size: 0.9rem; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <canvas id="dustCanvas"></canvas>
+
+  <div class="glass-panel" id="panelError">
+    <div class="error-panel">
+      <div class="error-icon">⛔</div>
+      <div class="error-title">TRUY CẬP BỊ TỪ CHỐI</div>
+      <div class="error-desc">
+        Hệ thống phát hiện bạn truy cập trực tiếp vào trang lấy Key.<br><br>
+        Vui lòng quay lại trang chủ và thực hiện <strong>vượt link</strong> để được xác thực cấp Key!
+      </div>
+      <button class="btn-copy" style="margin-top: 25px;" onclick="window.location.href='nhapkey.html'">QUAY LẠI TRANG CHỦ</button>
+    </div>
+  </div>
+
+  <div class="glass-panel" id="panelSuccess">
+    <div class="icon-success">🎉</div>
+    <div class="title">CHÚC MỪNG BẠN</div>
+    <div class="subtitle">Bạn đã vượt link thành công! Nhấn nút bên dưới để hệ thống cấp Key đăng nhập cho bạn.</div>
+    
+    <div class="info-box">
+      <p>Loại Key: <span>VIP 3 GIỜ</span></p>
+      <p>Giới hạn: <span>1 THIẾT BỊ</span></p>
+    </div>
+
+    <button class="btn-generate" id="btnGenerate">Nhận Key🚀</button>
+
+    <div class="progress-wrapper" id="progressWrapper">
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progressBar"></div>
+      </div>
+      <div class="progress-text" id="progressText">Đang trích xuất key từ hệ thống... 0%</div>
+    </div>
+
+    <div class="result-wrapper" id="resultWrapper">
+      <div class="key-display" id="keyDisplay">FAROS-XX-XXXX</div>
+      <button class="btn-copy" id="btnCopy">📋 SAO CHÉP KEY</button>
+      <div style="margin-top:15px; font-size:0.8rem; color:#888;">Hãy copy Key và quay lại trang đăng nhập nhé!</div>
+    </div>
+
+    <!-- Thông báo hết hạn -->
+    <div id="expiredMessage" style="display:none;">
+      <div class="box">
+        <div class="big-icon">⏳</div>
+        <div class="title-expired">KEY ĐÃ HẾT HẠN</div>
+        <div class="desc">Link lấy Key chỉ có hiệu lực trong 5 phút. Vui lòng quay lại trang chủ để tạo link mới.</div>
+        <button class="btn-copy" style="margin-top:15px;" onclick="window.location.href='nhapkey.html'">QUAY LẠI TRANG CHỦ</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+    // 1. Cấu hình Firebase Database (Giữ nguyên thông tin của bạn)
+    const firebaseConfig = {
+      apiKey: "AIzaSyD7UvVO5G5EgCwoYd-VgJYXylUw1nOGSlI",
+      databaseURL: "https://shopfarossite-default-rtdb.firebaseio.com"
+    };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // 2. Vẽ bụi nền hiệu ứng (Giữ nguyên)
+    const dCanvas = document.getElementById('dustCanvas'); const dCtx = dCanvas.getContext('2d'); let particles = [];
+    function resizeDust() { dCanvas.width = window.innerWidth; dCanvas.height = window.innerHeight; }
+    window.addEventListener('resize', resizeDust); resizeDust();
+    for(let i=0; i<40; i++) particles.push({ x: Math.random() * dCanvas.width, y: Math.random() * dCanvas.height, r: Math.random() * 2 + 0.5, vx: (Math.random() - 0.5) * 0.5, vy: (Math.random() - 0.5) * 0.5, alpha: Math.random() * 0.5 + 0.1 });
+    function drawDust() { dCtx.clearRect(0,0, dCanvas.width, dCanvas.height); particles.forEach(p => { p.x += p.vx; p.y += p.vy; if(p.x < 0 || p.x > dCanvas.width) p.vx *= -1; if(p.y < 0 || p.y > dCanvas.height) p.vy *= -1; dCtx.beginPath(); dCtx.arc(p.x, p.y, p.r, 0, Math.PI*2); dCtx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`; dCtx.fill(); }); requestAnimationFrame(drawDust); } drawDust();
+
+    // Khai báo biến toàn cục
+    let destructionInterval;
+
+    // 3. LOGIC XỬ LÝ TRUY CẬP VÀ BẢO MẬT DÒNG TIỀN
+    window.onload = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const isPass = urlParams.get('pass') === 'true';
+      const now = Date.now();
+
+      // TRƯỜNG HỢP 1: Lần đầu tiên vừa vượt link xong (Có pass=true)
+      if (isPass) {
+        // Cấp quyền hợp lệ
+        sessionStorage.setItem('faros_link_authorized', 'true');
+        // Xóa key cũ nếu có (bắt đầu chu trình mới)
+        sessionStorage.removeItem('faros_generated_key');
+        
+        // Đặt đồng hồ tử thần 2 phút (120,000ms) kể từ lúc load trang
+        const expireTime = now + (120 * 1000);
+        sessionStorage.setItem('faros_destroy_timestamp', expireTime);
+
+        // Bẻ gãy url, xóa ?pass=true để người dùng không thể F5 hoặc copy link ăn gian
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+
+      // TRƯỜNG HỢP 2: Kiểm tra phiên bản quyền (áp dụng khi F5)
+      const isAuthorized = sessionStorage.getItem('faros_link_authorized') === 'true';
+      const destroyTimestamp = parseInt(sessionStorage.getItem('faros_destroy_timestamp'));
+
+      if (isAuthorized && destroyTimestamp) {
+        // Nếu đã quá 2 phút -> Đóng trang
+        if (now >= destroyTimestamp) {
+            handleLinkExpired();
+            return;
+        }
+
+        // Bắt đầu đếm ngược 2 phút cho trang web
+        startGlobalDestructionTimer(destroyTimestamp);
+
+        // Kiểm tra xem đã nhận key chưa
+        const savedKey = sessionStorage.getItem('faros_generated_key');
+        if (savedKey) {
+            // NẾU ĐÃ CÓ KEY RỒI MÀ F5 -> Chỉ hiện mã cũ, không cho tạo thêm
+            document.getElementById('panelSuccess').style.display = 'flex';
+            document.getElementById('btnGenerate').style.display = 'none';
+            document.getElementById('progressWrapper').style.display = 'none';
+            document.getElementById('resultWrapper').style.display = 'block';
+            document.getElementById('keyDisplay').innerText = savedKey;
+        } else {
+            // NẾU CHƯA NHẬN KEY VÀ VẪN TRONG THỜI GIAN 2 PHÚT -> Cho hiện nút nhận key
+            document.getElementById('panelSuccess').style.display = 'flex';
+            document.getElementById('btnGenerate').style.display = 'block';
+            document.getElementById('resultWrapper').style.display = 'none';
+            document.getElementById('progressWrapper').style.display = 'none';
+            document.getElementById('expiredMessage').style.display = 'none';
+        }
+      } else {
+        // TRƯỜNG HỢP 3: Truy cập lậu, không có pass=true và không có session
+        document.getElementById('panelError').style.display = 'flex';
+        document.getElementById('panelSuccess').style.display = 'none';
+      }
+    };
+
+    // Hàm đếm ngược và ép đóng trang
+    function startGlobalDestructionTimer(targetTime) {
+      let timerDisplay = document.getElementById('linkCountdownTimer');
+      if (!timerDisplay) {
+        timerDisplay = document.createElement('div');
+        timerDisplay.id = 'linkCountdownTimer';
+        timerDisplay.style.cssText = 'color: #ff9f0a; font-size: 0.95rem; font-weight: 800; margin-bottom: 20px; letter-spacing: 0.5px; text-align: center; text-shadow: 0 0 10px rgba(255,159,10,0.3);';
+        const panelSuccess = document.getElementById('panelSuccess');
+        if(panelSuccess) panelSuccess.insertBefore(timerDisplay, panelSuccess.firstChild);
+      }
+
+      destructionInterval = setInterval(() => {
+        const timeLeft = targetTime - Date.now();
+        
+        if (timeLeft <= 0) {
+          clearInterval(destructionInterval);
+          handleLinkExpired();
+          
+          window.close(); // Yêu cầu đóng tab
+          setTimeout(() => { window.location.href = "about:blank"; }, 150);
+        } else {
+          let secondsLeft = Math.ceil(timeLeft / 1000);
+          timerDisplay.innerText = `⏳ TRANG SẼ TỰ ĐÓNG SAU: ${secondsLeft} GIÂY`;
+        }
+      }, 1000);
+    }
+
+    function handleLinkExpired() {
+      sessionStorage.clear();
+      if(destructionInterval) clearInterval(destructionInterval);
+      document.getElementById('panelSuccess').style.display = 'none';
+      document.getElementById('panelError').style.display = 'none';
+      document.getElementById('expiredMessage').style.display = 'block';
+    }
+
+    // 4. LOGIC CHẠY THANH TIẾN TRÌNH LOADER
+    const btnGenerate = document.getElementById('btnGenerate');
+    const progressWrapper = document.getElementById('progressWrapper');
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    const resultWrapper = document.getElementById('resultWrapper');
+    const keyDisplay = document.getElementById('keyDisplay');
+    const btnCopy = document.getElementById('btnCopy');
+
+    function generateRandomString(length) {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let result = '';
+      for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return result;
+    }
+
+    btnGenerate.addEventListener('click', () => {
+      btnGenerate.style.display = 'none';
+      progressWrapper.style.display = 'flex';
+      
+      let percent = 0;
+      let interval = setInterval(() => {
+        percent += Math.floor(Math.random() * 5) + 2; 
+        if (percent >= 100) percent = 100;
+        
+        progressBar.style.width = percent + '%';
+        progressText.innerText = `Đang tạo chuỗi mã hóa an toàn... ${percent}%`;
+
+        if (percent === 100) {
+          clearInterval(interval);
+          progressText.innerText = 'Đang đồng bộ máy chủ bảo mật FAROS...';
+          pushKeyToFirebase();
+        }
+      }, 40);
+    });
+
+    // 5. ĐẨY DATA LÊN FIREBASE VÀ KHOÁ PHIÊN CHỐNG TRÙNG MÃ
+    function pushKeyToFirebase() {
+      const newKey = "FAROS-3H-" + generateRandomString(9);
+      const keyRef = db.ref('Keys_farosWvdann_secure_x367_369_36_67/' + newKey);
+      
+      keyRef.set({
+        code: newKey,
+        durationHours: 3, 
+        limit: 1,        
+        expire: null, 
+        devices: {}, 
+        createdAt: Date.now()
+      }).then(() => {
+        // LƯU KEY LẠI VÀO SESSION ĐỂ F5 CHỈ HIỆN LẠI MÃ NÀY
+        sessionStorage.setItem('faros_generated_key', newKey);
+
+        progressWrapper.style.display = 'none';
+        resultWrapper.style.display = 'block';
+        keyDisplay.innerText = newKey;
+      }).catch((error) => {
+        progressText.style.color = '#ff453a';
+        progressText.innerText = 'Lỗi kết nối Firebase: ' + error.message;
+      });
+    }
+
+    // 6. CHỨC NĂNG COPY KEY 
+    btnCopy.addEventListener('click', () => {
+      const textToCopy = keyDisplay.innerText;
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        btnCopy.innerText = '✔️ ĐÃ SAO CHÉP';
+        btnCopy.style.background = 'rgba(48,209,88,0.2)';
+        btnCopy.style.borderColor = 'rgba(48,209,88,0.5)';
+        btnCopy.style.color = '#30d158';
+        
+        setTimeout(() => {
+          btnCopy.innerText = '📋 SAO CHÉP KEY';
+          btnCopy.style.background = 'rgba(255,255,255,0.1)';
+          btnCopy.style.borderColor = 'rgba(255,255,255,0.2)';
+          btnCopy.style.color = '#fff';
+        }, 2500);
+      }).catch(() => {
+        alert('Lỗi bảo mật trình duyệt: Vui lòng bôi đen và copy thủ công!');
+      });
+    });
+
+    // 7. KHÓA CHẶN CHỐNG SOI CODE CƠ BẢN
+    document.addEventListener('contextmenu', event => {
+      if (event.target.tagName !== 'DIV' || event.target.id !== 'keyDisplay') {
+        event.preventDefault();
+      }
+    });
+    document.addEventListener('keydown', event => {
+      if ((event.ctrlKey || event.metaKey) && (event.key === 'c' || event.key === 'u' || event.key === 's')) {
+        event.preventDefault();
+      }
+    });
+</script>
+</body>
+</html>
