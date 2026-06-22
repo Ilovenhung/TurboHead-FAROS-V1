@@ -36,7 +36,7 @@
     .btn-primary { width: 100%; padding: 14px; background: linear-gradient(135deg, #0a84ff, #005bb5); border: none; border-radius: 12px; color: #fff; font-weight: 800; font-size: 0.95rem; cursor: pointer; transition: 0.2s; letter-spacing: 0.3px; }
     .btn-primary:active { transform: scale(0.97); }
     
-    .key-list { margin-top: 20px; max-height: 340px; overflow-y: auto; background: rgba(0,0,0,0.25); border-radius: 14px; padding: 8px; border: 1.5px solid var(--glass-border); }
+    .key-list { margin-top: 10px; max-height: 340px; overflow-y: auto; background: rgba(0,0,0,0.25); border-radius: 14px; padding: 8px; border: 1.5px solid var(--glass-border); }
     .key-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 8px; border-bottom: 1px solid rgba(255,255,255,0.06); }
     .key-item:last-child { border-bottom: none; }
     
@@ -157,8 +157,14 @@
       </div>
     </div>
     
-    <button class="btn-primary" id="btnCreateKey" style="margin-top: 4px; background: linear-gradient(135deg, #0a84ff, #004094);">➕ TẠO KEY HỆ THỐNG</button>
+    <button class="btn-primary" id="btnCreateKey" style="margin-top: 4px; margin-bottom: 20px; background: linear-gradient(135deg, #0a84ff, #004094);">➕ TẠO KEY HỆ THỐNG</button>
     
+    <!-- THANH TÌM KIẾM ĐƯỢC THÊM VÀO Ở ĐÂY -->
+    <div class="input-group" style="margin-bottom: 8px;">
+      <input type="text" id="searchKeyInput" class="glass-input" placeholder="🔍 Tìm kiếm mã Key..." style="padding: 12px; font-size: 0.9rem;">
+    </div>
+    <!-- KẾT THÚC THANH TÌM KIẾM -->
+
     <div class="key-list" id="adminKeyList">Đang kết nối cơ sở dữ liệu...</div>
   </div>
 
@@ -225,6 +231,7 @@
     let accessGranted = false;
     let db = null;
     let selectedDuration = "1D"; 
+    let allKeysData = []; // BIẾN LƯU DỮ LIỆU ĐỂ TÌM KIẾM
 
     const firebaseConfig = {
       apiKey: "AIzaSyD7UvVO5G5EgCwoYd-VgJYXylUw1nOGSlI",
@@ -358,51 +365,72 @@
       return `${hours}:${minutes} - ${day}/${month}/${date.getFullYear()}`;
     }
 
+    // LẤY DỮ LIỆU TỪ FIREBASE VÀ LƯU VÀO BIẾN allKeysData
     function renderKeys() {
       if(!accessGranted || !db) return;
       db.ref('Keys_farosWvdann_secure_x367_369_36_67').on('value', (snap) => {
-        const list = document.getElementById('adminKeyList'); list.innerHTML = '';
         const data = snap.val();
-        if(!data) { list.innerHTML = '<div style="text-align:center; color:var(--text-secondary); padding:20px; font-size:0.85rem;">Chưa có key nào tồn tại trên máy chủ.</div>'; return; }
+        if(!data) { 
+            allKeysData = [];
+            updateKeyListUI(); 
+            return; 
+        }
+        allKeysData = Object.values(data).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        updateKeyListUI(document.getElementById('searchKeyInput').value); 
+      });
+    }
+
+    // HÀM HIỂN THỊ UI VÀ CHỨC NĂNG LỌC TÌM KIẾM
+    function updateKeyListUI(searchQuery = '') {
+      const list = document.getElementById('adminKeyList'); 
+      list.innerHTML = '';
+      
+      let filteredKeys = allKeysData;
+      if(searchQuery.trim() !== '') {
+          const lowerQuery = searchQuery.trim().toLowerCase();
+          filteredKeys = allKeysData.filter(k => k.code && k.code.toLowerCase().includes(lowerQuery));
+      }
+
+      if(filteredKeys.length === 0) {
+          list.innerHTML = '<div style="text-align:center; color:var(--text-secondary); padding:20px; font-size:0.85rem;">Không tìm thấy key nào.</div>';
+          return;
+      }
+
+      filteredKeys.forEach(k => {
+        let dev = k.devices ? Object.keys(k.devices).length : 0;
+        let statusHtml = '';
         
-        const keyArray = Object.values(data).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        let durStr = k.durationDays;
+        let textDur = '';
+        if (durStr === 'lifetime') textDur = 'Vĩnh viễn';
+        else if (typeof durStr === 'number' || !isNaN(durStr)) textDur = `${durStr} Ngày`;
+        else if (durStr.includes('MIN')) textDur = `${durStr.replace('MIN', '')} Phút`;
+        else if (durStr.includes('H')) textDur = `${durStr.replace('H', '')} Giờ`;
+        else if (durStr.includes('D')) textDur = `${durStr.replace('D', '')} Ngày`;
 
-        keyArray.forEach(k => {
-          let dev = k.devices ? Object.keys(k.devices).length : 0;
-          let statusHtml = '';
-          
-          let durStr = k.durationDays;
-          let textDur = '';
-          if (durStr === 'lifetime') textDur = 'Vĩnh viễn';
-          else if (typeof durStr === 'number' || !isNaN(durStr)) textDur = `${durStr} Ngày`;
-          else if (durStr.includes('MIN')) textDur = `${durStr.replace('MIN', '')} Phút`;
-          else if (durStr.includes('H')) textDur = `${durStr.replace('H', '')} Giờ`;
-          else if (durStr.includes('D')) textDur = `${durStr.replace('D', '')} Ngày`;
-
-          if (durStr === 'lifetime') {
-            statusHtml = '<span style="color: #0a84ff; font-weight:700;">Vĩnh viễn</span>';
-          } else if (!k.expire) {
-            statusHtml = `<span style="color: var(--warning); font-weight:600;">Chưa KH (${textDur})</span>`;
+        if (durStr === 'lifetime') {
+          statusHtml = '<span style="color: #0a84ff; font-weight:700;">Vĩnh viễn</span>';
+        } else if (!k.expire) {
+          statusHtml = `<span style="color: var(--warning); font-weight:600;">Chưa KH (${textDur})</span>`;
+        } else {
+          if (Date.now() > k.expire) {
+              statusHtml = `<span style="color: var(--danger); font-weight:600;">Đã Hết Hạn</span>`;
           } else {
-            if (Date.now() > k.expire) {
-                statusHtml = `<span style="color: var(--danger); font-weight:600;">Đã Hết Hạn</span>`;
-            } else {
-                statusHtml = `<span style="color: var(--success); font-weight:600;">${formatFullDate(k.expire)}</span>`;
-            }
+              statusHtml = `<span style="color: var(--success); font-weight:600;">${formatFullDate(k.expire)}</span>`;
           }
+        }
 
-          list.innerHTML += `
-            <div class="key-item">
-              <div class="key-info" style="flex:1; min-width: 0;">
-                <span>${k.code}</span>
-                <div class="key-details">${dev}/${k.limit} Máy sử dụng • HSD: ${statusHtml}</div>
-              </div>
-              <div class="action-btns">
-                <button class="btn-copy" onclick="copyKey('${k.code}')">COPY</button>
-                <button class="btn-delete" onclick="deleteKey('${k.code}')">XÓA</button>
-              </div>
-            </div>`;
-        });
+        list.innerHTML += `
+          <div class="key-item">
+            <div class="key-info" style="flex:1; min-width: 0;">
+              <span>${k.code}</span>
+              <div class="key-details">${dev}/${k.limit} Máy sử dụng • HSD: ${statusHtml}</div>
+            </div>
+            <div class="action-btns">
+              <button class="btn-copy" onclick="copyKey('${k.code}')">COPY</button>
+              <button class="btn-delete" onclick="deleteKey('${k.code}')">XÓA</button>
+            </div>
+          </div>`;
       });
     }
 
@@ -411,6 +439,12 @@
       const selectModal = document.getElementById('farosSelectModal');
       const closeSelectModal = document.getElementById('btnCloseSelectModal');
       const optionButtons = document.querySelectorAll('.btn-option');
+      const searchInput = document.getElementById('searchKeyInput');
+
+      // SỰ KIỆN TÌM KIẾM KEY MỖI KHI GÕ
+      searchInput.addEventListener('input', (e) => {
+          updateKeyListUI(e.target.value);
+      });
 
       trigger.addEventListener('click', () => { selectModal.classList.add('active'); });
       closeSelectModal.addEventListener('click', () => { selectModal.classList.remove('active'); });
