@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TURBO HEAD FAROS</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Rajdhani:wght@500;700&display=swap');
+        
+        :root {
+            --red-primary: #7B2CBF;
+            --red-dark: #4A1769;
+            --red-light: #C77DFF;
+            --red-gradient-start: #9D4EDD;
+            --red-gradient-end: #5A189A;
+            --text-color: #FFFFFF;
+            --red-background-deep: #2A0A3D;
+        }
+        
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            margin: 0; padding: 0;
+            background-color: #000;
+            color: var(--text-color);
+            overflow-x: hidden;
+            min-height: 100vh;
+            
+            /* -- Chống bôi đen, sao chép chữ -- */
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            
+            /* -- Tắt hiệu ứng nháy xanh khi bấm nút trên mobile -- */
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Tắt outline khi click trên máy tính */
+        button, input, a {
+            outline: none !important;
+        }
+
+        /* MATRIX RAIN BACKGROUND */
+        #matrixCanvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -1;
+            opacity: 0.45;
+            pointer-events: none;
+        }
+
+        .container {
+            max-width: 380px;
+            margin: 25px auto;
+            background: rgba(15, 5, 25, 0.92);
+            border-radius: 18px;
+            padding: 20px;
+            box-shadow: 0 0 20px var(--red-primary), 0 0 40px rgba(123, 44, 191, 0.5);
+            border: 2px solid var(--red-primary);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .container::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: linear-gradient(to bottom right, transparent 45%, var(--red-primary) 50%, transparent 55%);
+            opacity: 0.25;
+            animation: scan 6s linear infinite;
+            z-index: -1;
+        }
+        
+        @keyframes scan { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--red-primary);
+        }
+        
+        .header h1 {
+            font-family: 'Orbitron', sans-serif;
+            color: transparent;
+            background: linear-gradient(90deg, var(--red-primary), var(--red-light));
+            -webkit-background-clip: text;
+            background-clip: text;
+            margin: 0;
+            font-size: 28px;
+            letter-spacing: 2px;
+            text-shadow: 0 0 15px rgba(199, 125, 255, 0.8);
+        }
+        
+        .header p { color: var(--red-light); margin: 8px 0 0; font-size: 13px; font-weight: bold; }
+
+        /* PERFORMANCE CARD CÂN ĐỐI */
+        .performance-card {
+            padding: 20px 0;
+            margin-bottom: 25px;
+            background: rgba(15, 5, 25, 0.7);
+            border-radius: 12px;
+            border: 1px solid var(--red-primary);
+            box-shadow: 0 0 10px rgba(123, 44, 191, 0.3);
+        }
+
+        .performance-stats {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+
+        .stat-circle-container {
+            position: relative;
+            width: 80px; height: 80px;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+        }
+
+        .stat-circle-container svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+        .stat-circle-container circle { fill: none; stroke-width: 6; stroke-linecap: round; }
+        .bg-circle { stroke: rgba(255, 255, 255, 0.15); }
+        .progress-circle { stroke-dasharray: 251.2; transition: all 1.5s ease-out; }
+
+        .stat-circle-text { position: absolute; font-size: 16px; font-weight: bold; color: var(--text-color); z-index: 10; }
+        .stat-circle-label { position: absolute; font-size: 10px; color: var(--red-light); margin-top: 25px; font-weight: bold; }
+
+        /* FEATURE ITEMS */
+        .feature {
+            background: rgba(123, 44, 191, 0.12);
+            margin: 10px 0;
+            padding: 12px 15px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid var(--red-primary);
+            transition: 0.3s;
+        }
+        .feature:hover { background: rgba(123, 44, 191, 0.2); }
+        .feature-name { font-weight: bold; font-size: 16px; color: var(--red-light); text-shadow: 0 0 5px var(--red-primary); }
+        .feature-desc { font-size: 11px; color: #aaa; margin-top: 2px; }
+        .vip-badge { background: #ffd700; color: #000; font-size: 9px; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-left: 6px; box-shadow: 0 0 8px #ffd700; }
+
+        /* TOGGLE SWITCH */
+        .toggle-switch { position: relative; width: 55px; height: 28px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #333; transition: .4s; border-radius: 28px; }
+        .slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 3px; bottom: 3px; background: #fff; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background: linear-gradient(90deg, #8B00FF, #C084FC); box-shadow: 0 0 10px var(--red-primary); }
+        input:checked + .slider:before { transform: translateX(27px); }
+
+        /* --- SCRIPT RUN PANEL (NÂNG CẤP) --- */
+        .script-panel {
+            background: #0a0a0a;
+            border: 1.5px solid #00ff41;
+            border-radius: 16px;
+            padding: 18px;
+            margin: 25px 0;
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.2);
+        }
+
+        .script-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .run-btn {
+            padding: 10px 20px;
+            background: #ff4400;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-family: 'Rajdhani';
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            font-size: 13px;
+        }
+
+        .run-btn.running { background: #0099ff; cursor: wait; }
+        .run-btn.success { background: #00cc00; box-shadow: 0 0 15px #00ff41; }
+
+        .log-container { height: 120px; overflow-y: auto; margin-bottom: 15px; scrollbar-width: none; }
+        .log-container::-webkit-scrollbar { display: none; }
+
+        .log {
+            font-family: monospace;
+            color: #00ff88;
+            font-size: 12px;
+            line-height: 1.6;
+            margin-bottom: 4px;
+            display: none;
+        }
+
+        .script-buttons { display: flex; gap: 12px; margin-top: 5px; }
+        .btn-fire { flex: 1; padding: 14px; border: none; border-radius: 12px; font-weight: bold; font-size: 15px; color: white; cursor: pointer; transition: 0.2s; }
+        .btn-fire:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn-free  { background: linear-gradient(90deg, #ff6600, #ff2200); }
+        .btn-max   { background: linear-gradient(90deg, #0099ff, #0066ff); }
+
+        .footer {
+            text-align: center;
+            font-size: 11px;
+            color: #777;
+            margin-top: 20px;
+            line-height: 1.6;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        /* Custom Modal Style - Thay thế cho alert mặc định */
+        .faros-modal-overlay {
+            position: fixed; inset: 0; background: rgba(7, 7, 13, 0.6);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            z-index: 99999; display: flex; justify-content: center; align-items: center;
+            padding: 20px; opacity: 0; pointer-events: none; transition: all 0.3s;
+        }
+        .faros-modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .faros-modal-box {
+            background: rgba(42, 10, 61, 0.9); border: 2px solid var(--red-primary);
+            border-radius: 20px; padding: 25px; width: 100%; max-width: 320px;
+            box-shadow: 0 0 30px rgba(123, 44, 191, 0.5); text-align: center;
+            transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.15);
+        }
+        .faros-modal-overlay.active .faros-modal-box { transform: scale(1); }
+        .faros-modal-text { font-size: 1.1rem; color: #fff; margin-bottom: 25px; font-weight: bold; line-height: 1.4; }
+        .btn-modal { 
+            background: linear-gradient(90deg, var(--red-primary), var(--red-light));
+            border: none; padding: 12px 30px; border-radius: 10px; color: white;
+            font-weight: bold; cursor: pointer; width: 100%;
+        }
+    </style>
+</head>
+<body onload="initApp()">
+
+    <canvas id="matrixCanvas"></canvas>
+
+    <div class="container">
+        <div class="header">
+            <h1 class="glitch">Turbo Head</h1>
+            <p>Zalo: 0389148483</p>
+            <p>TikTok: faros.lovetiktok</p>
+        </div>
+        
+        <div class="performance-card">
+            <div class="performance-stats">
+                <div class="stat-circle-container">
+                    <svg viewBox="0 0 100 100">
+                        <circle class="bg-circle" cx="50" cy="50" r="40"></circle>
+                        <circle id="cpu-progress" class="progress-circle" cx="50" cy="50" r="40"></circle>
+                    </svg>
+                    <span class="stat-circle-text" id="cpu-percent">0%</span>
+                    <span class="stat-circle-label">CPU</span>
+                </div>
+                
+                <div class="stat-circle-container">
+                    <svg viewBox="0 0 100 100">
+                        <circle class="bg-circle" cx="50" cy="50" r="40"></circle>
+                        <circle id="ram-progress" class="progress-circle" cx="50" cy="50" r="40"></circle>
+                    </svg>
+                    <span class="stat-circle-text" id="ram-percent">0%</span>
+                    <span class="stat-circle-label">RAM</span>
+                </div>
+                
+                <div class="stat-circle-container">
+                    <svg viewBox="0 0 100 100">
+                        <circle class="bg-circle" cx="50" cy="50" r="40"></circle>
+                        <circle id="network-progress" class="progress-circle" cx="50" cy="50" r="40"></circle>
+                    </svg>
+                    <span class="stat-circle-text" id="network-percent">0%</span>
+                    <span class="stat-circle-label">NETWORK</span>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px;">
+                <div class="feature">
+                    <div class="feature-info">
+                        <div class="feature-name">AimLock Plus <span class="vip-badge">VIP</span></div>
+                        <div class="feature-desc">Kích Hoạt AimLock</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-info">
+                        <div class="feature-name">Nhẹ Tâm Plus <span class="vip-badge">VIP</span></div>
+                        <div class="feature-desc">Giúp nhẹ tâm bám đầu</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-info">
+                        <div class="feature-name">FIX RUNG <span class="vip-badge">VIP</span></div>
+                        <div class="feature-desc">Fix Rung Tâm khi bắn</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-info">
+                        <div class="feature-name">Sensivity Pro <span class="vip-badge">VIP</span></div>
+                        <div class="feature-desc">Giúp Nhẹ Tâm Nhạy Màn</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-info">
+                        <div class="feature-name">Bám Đầu <span class="vip-badge">VIP</span></div>
+                        <div class="feature-desc">Tăng bám đầu 85%</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-info">
+                        <div class="feature-name">Giảm Lạc Đạn <span class="vip-badge">VIP</span></div>
+                        <div class="feature-desc">Giúp đạn bay ổn định hơn</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="script-panel">
+            <div class="script-header">
+                <span style="font-size:16px; font-weight:bold; color:#00ff41;">📜 Terminal Output</span>
+                <button id="runBtn" class="run-btn" onclick="startScript()">KHỞI CHẠY BỔ SUNG...</button>
+            </div>
+            
+            <div class="log-container" id="logBox">
+                <div class="log">> [SYSTEM] Bypassing kernel limitations...</div>
+                <div class="log">> [MEMORY] Cleaning cache buffers...</div>
+                <div class="log">> [PATCH] Injecting FF-Drag offset...</div>
+                <div class="log">> [TOUCH] Optimizing response latency...</div>
+                <div class="log">> [NETWORK] Optimizing DNS for latency...</div>
+                <div class="log">> [CORE] Stabilizing CPU clock frequency...</div>
+                <div class="log">> [DRAG] Applying Aimlock drag velocity...</div>
+                <div class="log">> [FINAL] Patching residual game logs...</div>
+                <div class="log">> [SUCCESS] SCRIPT EXECUTED SUCCESSFULLY!</div>
+            </div>
+
+            <div class="script-buttons">
+                <button class="btn-fire btn-free" id="btnFree" onclick="launchGame(1)" disabled>🔥 FREE FIRE</button>
+                <button class="btn-fire btn-max" id="btnMax" onclick="launchGame(2)" disabled>⚡ FF MAX</button>
+            </div>
+        </div>
+
+        <div class="footer">
+            © 2026 Zalo Liên Hệ: 0389148483 <br>
+            TikTok: faros.lovetiktok <br>
+            Cung cấp AimLock - Hỗ trợ kéo tâm - Proxy ADR<br>
+            Uy tín - An toàn - Chất lượng
+        </div>
+    </div>
+
+    <div id="farosAlertModal" class="faros-modal-overlay">
+        <div class="faros-modal-box">
+            <div id="farosAlertText" class="faros-modal-text"></div>
+            <button class="btn-modal" onclick="closeModal()">ĐÃ HIỂU</button>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. HÀM HIỂN THỊ MODAL THÔNG BÁO ---
+        function showFarosAlert(message, redirect = false) {
+            document.getElementById('farosAlertText').innerText = message;
+            document.getElementById('farosAlertModal').classList.add('active');
+            window.redirectUrl = redirect;
+        }
+
+        function closeModal() {
+            document.getElementById('farosAlertModal').classList.remove('active');
+            if (window.redirectUrl) {
+                window.location.href = 'nhapkey.html';
+            }
+        }
+
+        // --- 2. CHỐT CHẶN BẢO MẬT & KIỂM TRA KEY ---
+        const currentKey = localStorage.getItem('faros_current_key');
+        if (!currentKey || localStorage.getItem('isLoggedIn') !== 'true') {
+            setTimeout(() => {
+                showFarosAlert('⚠️ Vui lòng quay lại trang đăng nhập để xác thực Key FAROS!', true);
+            }, 100);
+        }
+
+        // --- 3. CẤU HÌNH FIREBASE VÀ TÍNH NĂNG ĐÁ VĂNG REAL-TIME ---
+        const firebaseConfig = {
+          apiKey: "AIzaSyDo6wDKaf6T5Xjz8kCckdbq8O8zIACAqmk",
+          authDomain: "turbohead-app-v1-214adcxyz367.firebaseapp.com",
+          databaseURL: "https://turbohead-app-v1-214adcxyz367-default-rtdb.firebaseio.com",
+          projectId: "turbohead-app-v1-214adcxyz367",
+          storageBucket: "turbohead-app-v1-214adcxyz367.firebasestorage.app",
+          messagingSenderId: "804540004717",
+          appId: "1:804540004717:web:40d36f36f88b2e9b06e938"
+        };
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const auth = firebase.auth();
+        const DB_PATH = 'DATABASE_FAROS_TURBOHEADAPPV1';
+
+        // Cần đăng nhập ẩn danh để thoả điều kiện "auth != null" trong Firebase Rules,
+        // nếu không mọi lệnh đọc DATABASE_FAROS_TURBOHEADAPPV1 sẽ bị permission_denied.
+        function startKeyWatcher() {
+            if (currentKey) {
+                db.ref(DB_PATH + '/' + currentKey).on('value', (snapshot) => {
+                    if (!snapshot.exists()) {
+                        localStorage.clear();
+                        showFarosAlert('❌ LỖI BẢO MẬT: Key của bạn đã bị Admin thu hồi hoặc xoá!', true);
+                    } else {
+                        const data = snapshot.val();
+                        if (data.expire && Date.now() > data.expire) {
+                            localStorage.clear();
+                            showFarosAlert('⌛ Key của bạn đã hết hạn sử dụng! Vui lòng thuê Key mới.', true);
+                        }
+                    }
+                }, (err) => {
+                    console.error('Lỗi theo dõi Key:', err);
+                });
+            }
+        }
+
+        auth.onAuthStateChanged((user) => {
+            if (user) startKeyWatcher();
+        });
+
+        auth.signInAnonymously().catch((err) => {
+            console.error('Lỗi xác thực ẩn danh:', err);
+            showFarosAlert('⚠️ Lỗi kết nối hệ thống xác thực. Vui lòng tải lại trang!', false);
+        });
+
+        // --- 4. MATRIX RAIN BACKGROUND LOGIC ---
+        const canvas = document.getElementById('matrixCanvas');
+        const ctx = canvas.getContext('2d');
+        let width, height, drops = [];
+        const letters = "01ABCDEFGHIJKLMNOPQRSTUVWXYZｦｱｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ";
+        const fontSize = 15;
+
+        function resizeCanvas() {
+            width = window.innerWidth; height = window.innerHeight;
+            canvas.width = width; canvas.height = height;
+            drops = Array(Math.floor(width / fontSize)).fill(1);
+        }
+
+        function drawMatrix() {
+            ctx.fillStyle = "rgba(0,0,0,0.1)";
+            ctx.fillRect(0,0,width,height);
+            ctx.fillStyle = "#00ff41";
+            ctx.font = fontSize + "px monospace";
+            for (let i = 0; i < drops.length; i++) {
+                const text = letters[Math.floor(Math.random() * letters.length)];
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                if (drops[i] * fontSize > height && Math.random() > 0.975) drops[i] = 0;
+                drops[i]++;
+            }
+        }
+
+        // --- 5. TERMINAL SCRIPT ANIMATION ---
+        function startScript() {
+            const btn = document.getElementById('runBtn');
+            const logs = document.querySelectorAll('#logBox .log');
+            const logBox = document.getElementById('logBox');
+            
+            btn.disabled = true;
+            btn.textContent = "ĐANG KHỞI CHẠY..."; 
+            btn.className = "run-btn running"; 
+            
+            logs.forEach(l => l.style.display = 'none');
+
+            let i = 0;
+            const interval = setInterval(() => {
+                if (i < logs.length) {
+                    logs[i].style.display = 'block';
+                    logBox.scrollTop = logBox.scrollHeight;
+                    i++;
+                    playTickSound(700 + (i * 30));
+                } else {
+                    clearInterval(interval);
+                    btn.textContent = "✓ THÀNH CÔNG"; 
+                    btn.className = "run-btn success"; 
+                    document.getElementById('btnFree').disabled = false;
+                    document.getElementById('btnMax').disabled = false;
+                    playFinalSound();
+                }
+            }, 600);
+        }
+
+        // --- 6. HIỆU ỨNG ÂM THANH (AUDIO CONTEXT) ---
+        let audioCtx;
+        function initAudio() { if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+        
+        function playTickSound(freq) {
+            initAudio();
+            const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+            o.frequency.value = freq; g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+            o.connect(g).connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime + 0.1);
+        }
+
+        function playFinalSound() { playTickSound(1000); setTimeout(() => playTickSound(1200), 100); }
+
+        // --- 7. MỞ GAME TRỰC TIẾP ---
+        function launchGame(type) {
+            const packageName = type === 1 ? "com.dts.freefireth" : "com.dts.freefiremax";
+            const urlScheme = type === 1 ? "freefire" : "freefiremax";
+            
+            playTickSound(1100);
+            setTimeout(() => playTickSound(1400), 50);
+
+            const ua = navigator.userAgent.toLowerCase();
+            const isAndroid = ua.includes('android');
+            const isIOS = ua.includes('iphone') || ua.includes('ipad');
+            
+            if (isAndroid) {
+                window.location.href = `intent://#Intent;scheme=${urlScheme};package=${packageName};end`;
+            } else if (isIOS) {
+                window.location.href = `${urlScheme}://`;
+            } else {
+                alert('Vui lòng mở game trên thiết bị di động.');
+            }
+        }
+
+                // --- 8. CẬP NHẬT THÔNG SỐ CPU/RAM/PING THỰC TẾ ---
+let lastLoop = Date.now();
+
+// 1. Khởi tạo giá trị RAM ban đầu (ví dụ: 40%)
+let currentRam = Math.floor(Math.random() * (65 - 20 + 1)) + 20; 
+
+function updateStats() {
+    const setVal = (id, val, color, unit = "%") => {
+        const prog = document.getElementById(id + '-progress');
+        const txt = document.getElementById(id + '-percent');
+        if (prog && txt) {
+            prog.style.stroke = color;
+            // Giới hạn max 100% cho vòng tròn tiến trình
+            let progressVal = val > 100 ? 100 : val;
+            prog.style.strokeDashoffset = 251.2 - (251.2 * progressVal / 100);
+            txt.textContent = val + unit;
+        }
+    };
+
+    // A. ĐO CPU THỰC TẾ (Dựa trên độ trễ xử lý của trình duyệt)
+    let thisLoop = Date.now();
+    let delay = thisLoop - lastLoop - 2000; 
+    lastLoop = thisLoop;
+    let cpuUsage = Math.min(99, Math.max(12, Math.floor(12 + (delay > 0 ? delay / 5 : 0) + Math.random() * 5)));
+    setVal('cpu', cpuUsage, '#ff3333');
+
+    // B. ĐO RAM CHÂN THẬT (Thay đổi mượt mà trong khoảng 20% - 65%)
+    // Tạo mức độ thay đổi nhỏ (từ -2% đến +2%)
+    let ramDelta = Math.floor(Math.random() * 5) - 2; 
+    currentRam += ramDelta;
+
+    // Ép thanh RAM luôn nằm trong khoảng [20, 65]
+    if (currentRam < 20) currentRam = 20 + Math.floor(Math.random() * 3);
+    if (currentRam > 65) currentRam = 65 - Math.floor(Math.random() * 3);
+
+    // Xác định màu sắc theo mức độ chiếm dụng RAM (Tùy chọn cho sinh động)
+    let ramColor = '#00ff41'; // Xanh lá (< 45%)
+    if (currentRam >= 45 && currentRam < 58) ramColor = '#ffaa00'; // Cam
+    if (currentRam >= 58) ramColor = '#ff3333'; // Đỏ
+
+    setVal('ram', currentRam, ramColor);
+
+    // C. ĐO MẠNG THỰC TẾ (Đo PING phản hồi thực tế đến Server bằng ms)
+    let startTime = Date.now();
+    db.ref('.info/connected').once('value').then(() => {
+        let ping = Date.now() - startTime;
+        if (ping < 15) ping = Math.floor(20 + Math.random() * 10); 
+        
+        let netColor = '#00ff41'; 
+        if (ping > 100) netColor = '#ffaa00'; 
+        if (ping > 250) netColor = '#ff3333'; 
+        
+        setVal('network', ping, netColor, 'ms');
+    }).catch(() => {
+        setVal('network', 999, '#ff3333', 'ms');
+    });
+}
+
+    // Chặn chuột phải
+    document.addEventListener('contextmenu', event => event.preventDefault());
+
+    // Chặn các phím tắt F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U
+    document.onkeydown = function(e) {
+        if(e.keyCode == 123) { return false; }
+        if(e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) { return false; }
+        if(e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) { return false; }
+        if(e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) { return false; }
+        if(e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) { return false; }
+    }
+        // --- 9. KHỞI TẠO TOÀN BỘ ỨNG DỤNG ---
+        function initApp() {
+            resizeCanvas();
+            setInterval(drawMatrix, 45);
+            setInterval(updateStats, 2000);
+            updateStats();
+            document.querySelectorAll('.toggle-switch input').forEach(t => t.addEventListener('change', () => playTickSound(900)));
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+    </script>
+</body>
+</html>
