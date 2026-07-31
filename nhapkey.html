@@ -5,420 +5,253 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="HandheldFriendly" content="true">
   <meta name="MobileOptimized" content="width">
-  <title>Đăng Nhập • FAROS SYSTEM</title>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <title>Bảo Trì Hệ Thống • FAROS SYSTEM</title>
   <style>
     :root {
-      --bg: #0b0b14; --surface: rgba(20, 20, 38, 0.85); --glass-border: rgba(255, 255, 255, 0.12);
-      --text: #f0f0f8; --text-secondary: #b0b0c8; --ios-blue: #0a84ff; --radius-lg: 28px;
+      --bg: #0b0b14; 
+      --surface: rgba(20, 20, 38, 0.85); 
+      --glass-border: rgba(255, 255, 255, 0.12);
+      --text: #f0f0f8; 
+      --text-secondary: #b0b0c8; 
+      --ios-blue: #0a84ff; 
+      --warning-orange: #ff9f0a;
+      --radius-lg: 28px;
       --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
       --shadow-glass: 0 8px 30px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.08);
-      --danger-neon: #ff453a;
     }
+    
     html { font-size: 16px !important; -webkit-text-size-adjust: 100% !important; text-size-adjust: 100% !important; }
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
-    body { font-family: var(--font); background: var(--bg); background-image: radial-gradient(ellipse at 50% 0%, rgba(255,107,53,0.1) 0%, transparent 60%), radial-gradient(ellipse at 50% 100%, rgba(64,156,255,0.08) 0%, transparent 60%); color: var(--text); min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; padding: 30px 10px; overflow-y: auto; }
+    
+    body { 
+      font-family: var(--font); 
+      background: var(--bg); 
+      background-image: radial-gradient(ellipse at 50% 0%, rgba(255,159,10,0.15) 0%, transparent 60%), radial-gradient(ellipse at 50% 100%, rgba(10,132,255,0.08) 0%, transparent 60%); 
+      color: var(--text); 
+      min-height: 100vh; 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      padding: 20px 10px; 
+      overflow-y: auto; 
+    }
+
     #dustCanvas { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
-    .glass-panel { background: var(--surface); backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px); border: 1.5px solid var(--glass-border); border-radius: var(--radius-lg); padding: 28px 24px; width: 92%; max-width: 450px; box-shadow: var(--shadow-glass); margin: 5vh auto; text-align: center; }
-    .welcome-title { font-weight: 800; font-size: 1.2rem; letter-spacing: 0.5px; margin-bottom: 4px; background: linear-gradient(135deg, #fff, #bbb); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-transform: uppercase; }
-    .welcome-brand { font-weight: 900; font-size: 1.5rem; color: #fff; text-shadow: 0 0 15px rgba(10,132,255,0.4); margin-bottom: 12px; letter-spacing: 0.5px; }
-    .welcome-sub { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5; margin-bottom: 16px; }
-    .welcome-sub strong { color: var(--ios-blue); font-weight: 700; }
-    .warning-tag { color: #ff453a; font-weight: 700; font-size: 0.85rem; margin-bottom: 4px; }
-    .warning-desc { color: var(--text-secondary); font-size: 0.85rem; line-height: 1.4; margin-bottom: 16px; }
-    .feature-tag { color: #30d158; font-weight: 600; font-size: 0.88rem; margin-bottom: 4px; }
-    .share-box { background: rgba(10, 132, 255, 0.08); border: 1px dashed rgba(10, 132, 255, 0.3); border-radius: 12px; padding: 12px; margin-bottom: 20px; font-size: 0.85rem; line-height: 1.45; color: #e0e0ff; display: flex; flex-direction: column; align-items: center; gap: 8px; }
-    .btn-box-zalo { display: inline-flex; align-items: center; justify-content: center; width: 85%; padding: 8px 12px; background: rgba(0, 122, 255, 0.2); border: 1px solid rgba(0, 122, 255, 0.5); border-radius: 8px; color: #fff; font-weight: 700; font-size: 0.85rem; text-decoration: none; transition: 0.2s; letter-spacing: 0.3px; }
-    .btn-box-zalo:active { transform: scale(0.97); }
-    .btn-zalo { display: inline-flex; align-items: center; justify-content: center; width: 100%; padding: 13px; background: rgba(0, 122, 255, 0.15); border: 1.5px solid rgba(0, 122, 255, 0.4); border-radius: 12px; color: #fff; font-weight: 700; font-size: 0.95rem; text-decoration: none; margin-bottom: 20px; transition: 0.3s; letter-spacing: 0.3px; }
-    .btn-zalo:hover { background: rgba(0, 122, 255, 0.25); }
-    .divider { height: 1px; background: rgba(255,255,255,0.1); margin-bottom: 20px; width: 100%; }
-    .input-group { margin-bottom: 14px; text-align: left; }
-    .input-group label { display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 600; }
-    .glass-input { width: 100%; padding: 14px; background: rgba(0,0,0,0.3); border: 1.5px solid var(--glass-border); border-radius: 12px; color: #fff; font-size: 1rem; outline: none; transition: all 0.3s; text-align: center; font-family: monospace; letter-spacing: 1px; -webkit-user-select: text !important; user-select: text !important; }
-    .glass-input:focus { border-color: var(--ios-blue); box-shadow: 0 0 15px rgba(10,132,255,0.3); }
-    .remember-group { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; font-size: 0.85rem; color: var(--text-secondary); cursor: pointer; text-align: left; width: fit-content; }
-    .remember-group input { width: 16px; height: 16px; accent-color: var(--ios-blue); cursor: pointer; }
-    .btn-primary { width: 100%; padding: 14px; background: linear-gradient(135deg, #0a84ff, #005bb5); border: none; border-radius: 12px; color: #fff; font-weight: 800; font-size: 1rem; cursor: pointer; transition: 0.2s; letter-spacing: 0.5px; }
-    .btn-primary:active { transform: scale(0.96); }
-    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); display: none; justify-content: center; align-items: center; z-index: 9999; padding: 20px; }
-    .modal-overlay.active { display: flex; }
-    .modal-box { background: rgba(20, 20, 38, 0.98); border: 1.5px solid rgba(255, 255, 255, 0.12); border-radius: 24px; padding: 25px; width: 95%; max-width: 420px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6); animation: modalPopUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
-    @keyframes modalPopUp { from { transform: scale(0.93); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-    .modal-title { font-size: 1.15rem; font-weight: 800; color: #fff; margin-bottom: 15px; text-align: center; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; }
-    .modal-text { font-size: 0.9rem; color: #b0b0c8; line-height: 1.6; text-align: left; margin-bottom: 20px; }
-    .modal-text strong { color: #30d158; }
-    .highlight { color: #ff453a; font-weight: bold; background: rgba(255, 69, 58, 0.15); padding: 2px 6px; border-radius: 4px; }
-    .modal-input { width: 100%; box-sizing: border-box; padding: 12px 15px; background: rgba(0, 0, 0, 0.3); border: 1.5px solid rgba(255, 255, 255, 0.12); border-radius: 12px; color: #fff; font-size: 0.95rem; outline: none; margin-bottom: 20px; text-align: center; transition: 0.2s; -webkit-user-select: text !important; user-select: text !important; font-family: monospace; }
-    .modal-input:focus { border-color: #0a84ff; }
-    .modal-actions { display: flex; gap: 12px; }
-    .btn-modal { flex: 1; padding: 12px; border: none; border-radius: 12px; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: 0.2s; }
-    .btn-modal:active { transform: scale(0.98); }
-    .btn-modal-cancel { background: rgba(255, 255, 255, 0.08); color: #fff; border: 1px solid rgba(255,255,255,0.05); }
-    #btnConfirmPrompt { background: linear-gradient(135deg, #0a84ff, #005bb5); color: #fff; }
-    #btnConfirmGetKey { background: linear-gradient(135deg, #30d158, #249941); color: #fff; }
-    #errorModal .modal-box { border-color: rgba(255, 69, 58, 0.35); box-shadow: 0 15px 40px rgba(255, 69, 58, 0.15); }
-    #errorModal .modal-title { color: var(--danger-neon); border-bottom: 1px solid rgba(255, 69, 58, 0.15); text-shadow: 0 0 10px rgba(255, 69, 58, 0.3); }
-    #errorModal .modal-text { text-align: center; color: #fff; padding: 10px 0; }
-    .btn-modal-danger { background: linear-gradient(135deg, #ff453a, #ff3b30); color: #fff; width: 100%; }
-    /* Rate limit bar */
-    .rate-info { font-size: 0.75rem; color: #666; text-align: center; margin-top: 10px; }
-    @keyframes pulse { 0% { transform: scale(1); text-shadow: 0 0 0 rgba(10, 132, 255, 0); } 50% { transform: scale(1.05); text-shadow: 0 0 10px rgba(10, 132, 255, 0.5); } 100% { transform: scale(1); text-shadow: 0 0 0 rgba(10, 132, 255, 0); } }
+    
+    .glass-panel { 
+      background: var(--surface); 
+      backdrop-filter: blur(28px); 
+      -webkit-backdrop-filter: blur(28px); 
+      border: 1.5px solid var(--glass-border); 
+      border-radius: var(--radius-lg); 
+      padding: 32px 24px; 
+      width: 92%; 
+      max-width: 450px; 
+      box-shadow: var(--shadow-glass); 
+      text-align: center; 
+      animation: fadeIn 0.5s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Maintenance Icon Pulse Animation */
+    .maintenance-icon {
+      font-size: 3.5rem;
+      margin-bottom: 12px;
+      display: inline-block;
+      animation: gearSpin 4s linear infinite;
+    }
+
+    @keyframes gearSpin {
+      0% { transform: rotate(0deg); }
+      50% { transform: rotate(180deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .status-tag {
+      display: inline-block;
+      background: rgba(255, 159, 10, 0.15);
+      border: 1px solid rgba(255, 159, 10, 0.4);
+      color: var(--warning-orange);
+      font-weight: 800;
+      font-size: 0.8rem;
+      padding: 4px 12px;
+      border-radius: 20px;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+    }
+
+    .welcome-title { 
+      font-weight: 800; 
+      font-size: 1.1rem; 
+      letter-spacing: 0.5px; 
+      margin-bottom: 4px; 
+      color: var(--text-secondary);
+      text-transform: uppercase; 
+    }
+
+    .welcome-brand { 
+      font-weight: 900; 
+      font-size: 1.6rem; 
+      color: #fff; 
+      text-shadow: 0 0 15px rgba(255,159,10,0.3); 
+      margin-bottom: 16px; 
+      letter-spacing: 0.5px; 
+    }
+
+    .notice-box {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 24px;
+      text-align: left;
+    }
+
+    .notice-box p {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      margin-bottom: 10px;
+    }
+
+    .notice-box p:last-child {
+      margin-bottom: 0;
+    }
+
+    .notice-box strong {
+      color: #fff;
+    }
+
+    .highlight-text {
+      color: var(--warning-orange) !important;
+      font-weight: 700;
+    }
+
+    .action-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .btn-action {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      letter-spacing: 0.3px;
+    }
+
+    .btn-zalo-admin {
+      background: linear-gradient(135deg, #0a84ff, #005bb5);
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(10, 132, 255, 0.3);
+    }
+
+    .btn-zalo-box {
+      background: rgba(0, 122, 255, 0.12);
+      border: 1.5px solid rgba(0, 122, 255, 0.4);
+      color: #fff;
+    }
+
+    .btn-action:active {
+      transform: scale(0.97);
+    }
+
+    .footer-info {
+      margin-top: 20px;
+      font-size: 0.8rem;
+      color: #666;
+    }
   </style>
 </head>
 <body>
   <canvas id="dustCanvas"></canvas>
+  
   <div class="glass-panel">
-    <div class="welcome-title">Chào Mừng Bạn Đến Với</div>
+    <div class="maintenance-icon">⚙️</div>
+    <br>
+    <div class="status-tag">SYSTEM MAINTENANCE</div>
+    <div class="welcome-title">BẢO TRÌ HỆ THỐNG</div>
     <div class="welcome-brand">TURBOHEAD FAROS V1</div>
-    <div class="welcome-sub">TurboHead là App Độc Quyền Bởi Developer:<br><strong>FAROS</strong></div>
-    <div class="warning-tag">[ ⚠️ LƯU Ý  ]</div>
-    <div class="warning-desc">TurboHead không phải phần mềm thứ 3<br>App không có VIRUS đảm bảo an toàn cho thiết bị.<br>Muốn có Key Free để trải nghiệm app <br>Bạn hãy nhấn vào <strong>Get Key Miễn Phí</strong> để lấy key</div>
-    <div class="feature-tag">An Toàn • Chất Lượng • Hiệu Quả</div>
-    <div class="share-box">
-      <span>🔑Key được Share miễn phí vào lúc<br> <strong>8h hoặc 10h tối</strong> <br> và có video hướng dẫn vượt link để lấy key miễn phí mà không cần chờ admin share <br> tất cả để có tại nhóm Zalo :</span>
-      <a href="https://zalo.me/g/ziivcp794" target="_blank" class="btn-box-zalo">👥 THAM GIA BOX ZALO</a>
+    
+    <div class="notice-box">
+      <p>🛠️ <strong>Thông báo:</strong> Ứng dụng hiện đang bảo trì và nâng cấp hệ thống để hoạt động ổn định hơn.</p>
+<p>⏰ <strong>Thời gian mở lại:</strong> Ứng dụng sẽ hoạt động trở lại ngay sau khi quá trình nâng cấp hoàn tất.</p>
+<p>💬 Trong thời gian bảo trì, vui lòng liên hệ Admin để biết thêm thông tin hoặc cập nhật thời gian mở lại.</p>
     </div>
-    <a href="https://zalo.me/0389148483" target="_blank" class="btn-zalo">💬 LIÊN HỆ ZALO DEVELOPER</a>
-    <div class="divider"></div>
-    <div class="input-group">
-      <label>Nhập Key :</label>
-      <input type="text" id="loginKeyInput" class="glass-input" placeholder="Ví dụ: FAROS-XX-XXXXX" autocomplete="off" maxlength="25">
-    </div>
-    <label class="remember-group"><input type="checkbox" id="rememberMeCheckbox"><span>Ghi nhớ đăng nhập</span></label>
-    <button class="btn-primary" id="btnLogin">ĐĂNG NHẬP</button>
-    <div class="rate-info" id="rateInfo"></div>
-    <div style="margin-top: 18px; display: flex; justify-content: center; gap: 25px; font-size: 0.9rem;">
-      <span id="btnOpenPrompt" style="cursor: pointer; color: #b0b0c8; text-decoration: underline;">Bạn không có key?</span>
-      <span id="btnOpenGetKey" style="cursor: pointer; color: #0a84ff; font-weight: bold; text-decoration: underline; animation: pulse 2s infinite;">Get Key Miễn Phí</span>
-    </div>
-  </div>
 
-  <div class="modal-overlay" id="customPromptModal">
-    <div class="modal-box">
-      <div class="modal-title">📌 Hệ thống phân phối key</div>
-      <div class="modal-text">• Để nhận Key đăng nhập miễn phí, hãy nhấn nút <strong>GET KEY</strong> màu xanh bên ngoài.<br><br>• <strong>Bạn có thể mua key</strong> mà không cần vượt link. Ngoài ra mình còn bán <strong>File hỗ trợ kéo tâm cho ADR, PROXY ADR</strong> - MENU IOS: <strong>Migul, Fluorite</strong> giá rẻ chất lượng cao.<br><br>👉 Nhập mã <span class="highlight">'vdanndzcute'</span> bên dưới để liên hệ Admin:</div>
-      <input type="text" id="modalPasswordInput" class="modal-input" placeholder="Nhập mã xác nhận tại đây..." autocomplete="off">
-      <div class="modal-actions">
-        <button class="btn-modal btn-modal-cancel" id="btnCancelPrompt">ĐÓNG</button>
-        <button class="btn-modal" id="btnConfirmPrompt">💬 CHAT ADMIN</button>
-      </div>
+    <div class="action-group">
+      <a href="https://zalo.me/0389148483" target="_blank" class="btn-action btn-zalo-admin">
+        💬 Liên hệ Admin
+      </a>
+      <a href="https://zalo.me/g/ziivcp794" target="_blank" class="btn-action btn-zalo-box">
+        👥 THAM GIA BOX ZALO CẬP NHẬT
+      </a>
     </div>
-  </div>
 
-  <div class="modal-overlay" id="getKeyModal">
-    <div class="modal-box">
-      <div class="modal-title">🎁 LẤY KEY MIỄN PHÍ 🎁</div>
-      <div class="modal-text" style="text-align: center;">Bạn sẽ được chuyển hướng sang trang vượt link để nhận <strong>KEY ĐĂNG NHẬP</strong>. Nếu 1 trang bị lỗi, hãy thử trang còn lại nhé:</div>
-      <div class="modal-actions" style="flex-direction: column; gap: 10px;">
-        <button class="btn-modal" id="btnGetKeyTaplayma" style="background: linear-gradient(135deg, #ff2d78, #b3005c); color:#fff;">🚀 VƯỢT LINK QUA TAPLAYMA</button>
-        <button class="btn-modal" id="btnGetKeyLink4m" style="background: linear-gradient(135deg, #30d158, #1a7a32); color:#fff;">🚀 VƯỢT LINK QUA LINK4M</button>
-        <button class="btn-modal btn-modal-cancel" id="btnCancelGetKey">BỎ QUA</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal-overlay" id="infoModal">
-    <div class="modal-box" style="border-color: rgba(255,165,0,0.35); box-shadow: 0 15px 40px rgba(255,165,0,0.12);">
-      <div class="modal-title" style="color: #ff9f0a; border-bottom-color: rgba(255,159,10,0.2); text-shadow: 0 0 10px rgba(255,159,10,0.3);">⚠️ THÔNG BÁO</div>
-      <div class="modal-text" id="infoModalMessage" style="text-align: center; color: #fff; padding: 10px 0;"></div>
-      <div class="modal-actions">
-        <button class="btn-modal" id="btnInfoClose" style="background: linear-gradient(135deg, #ff9f0a, #cc7a00); color: #fff; width: 100%;">TÔI ĐÃ HIỂU</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal-overlay" id="errorModal">
-    <div class="modal-box">
-      <div class="modal-title" id="errorModalTitle">THÔNG BÁO HỆ THỐNG</div>
-      <div class="modal-text" id="errorModalMessage" style="text-align:center; color:#fff; padding:10px 0;"></div>
-      <div class="modal-actions">
-        <button class="btn-modal btn-modal-danger" id="btnErrorClose">TÔI ĐÃ HIỂU</button>
-      </div>
+    <div class="footer-info">
+      Developer: <strong>FAROS</strong> • Xin lỗi vì sự bất tiện này!
     </div>
   </div>
 
   <script>
-(function(){
-const firebaseConfig = {
-apiKey: "AIzaSyDo6wDKaf6T5Xjz8kCckdbq8O8zIACAqmk",
-authDomain: "turbohead-app-v1-214adcxyz367.firebaseapp.com",
-databaseURL: "https://turbohead-app-v1-214adcxyz367-default-rtdb.firebaseio.com",
-projectId: "turbohead-app-v1-214adcxyz367",
-storageBucket: "turbohead-app-v1-214adcxyz367.firebasestorage.app",
-messagingSenderId: "804540004717",
-appId: "1:804540004717:web:40d36f36f88b2e9b06e938",
-measurementId: "G-03VE3CLMC0"
-};
-if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-const auth = firebase.auth();
-async function getDeviceFingerprint() {
-try {
-const ua = navigator.userAgent || '';
-const lang = navigator.language || '';
-const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-const screen = `${window.screen.width}x${window.screen.height}x${window.screen.colorDepth}`;
-const cores = navigator.hardwareConcurrency || 0;
-const mem = navigator.deviceMemory || 0;
-const platform = navigator.platform || '';
-const vendor = navigator.vendor || '';
-const raw = `${ua}|${lang}|${tz}|${screen}|${cores}|${mem}|${platform}|${vendor}`;
-const encoder = new TextEncoder();
-const data = encoder.encode(raw);
-const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-const hashArray = Array.from(new Uint8Array(hashBuffer));
-const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-return 'FP_' + hashHex.substring(0, 32).toUpperCase();
-} catch (e) {
-let fallbackHex = '';
-for (let i = 0; i < 32; i++) {
-fallbackHex += Math.floor(Math.random() * 16).toString(16);
-}
-return 'FP_' + fallbackHex.toUpperCase();
-}
-}
-let myDeviceId = null;
-let authReadyResolve;
-const authReady = new Promise((resolve) => { authReadyResolve = resolve; });
-auth.onAuthStateChanged(async (user) => {
-if (user) {
-myDeviceId = await getDeviceFingerprint();
-authReadyResolve();
-}
-});
-auth.signInAnonymously().catch((err) => {
-console.error('Lỗi xác thực ẩn danh:', err);
-});
-const RATE_LIMIT_MAX = 5;
-const RATE_LIMIT_WINDOW = 60000;
-const LOCKOUT_DURATION = 120000;
-function getRateData() {
-try { return JSON.parse(localStorage.getItem('faros_rate') || '{"count":0,"start":0,"locked":0}'); }
-catch(e) { return { count: 0, start: 0, locked: 0 }; }
-}
-function saveRateData(d) { localStorage.setItem('faros_rate', JSON.stringify(d)); }
-function checkRateLimit() {
-const now = Date.now();
-let d = getRateData();
-if (d.locked && now < d.locked) {
-const secsLeft = Math.ceil((d.locked - now) / 1000);
-return { allowed: false, msg: `Nhập sai quá nhiều lần. Thử lại sau ${secsLeft} giây.` };
-}
-if (now - d.start > RATE_LIMIT_WINDOW) { d = { count: 0, start: now, locked: 0 }; }
-return { allowed: true, remaining: RATE_LIMIT_MAX - d.count };
-}
-function recordFailedAttempt() {
-const now = Date.now();
-let d = getRateData();
-if (now - d.start > RATE_LIMIT_WINDOW) { d = { count: 1, start: now, locked: 0 }; }
-else { d.count++; }
-if (d.count >= RATE_LIMIT_MAX) { d.locked = now + LOCKOUT_DURATION; }
-saveRateData(d);
-}
-function resetRateLimit() { localStorage.removeItem('faros_rate'); }
-function isValidKeyFormat(key) {
-return key.trim().length >= 5;
-}
-const errorModal = document.getElementById('errorModal');
-const errorModalMessage = document.getElementById('errorModalMessage');
-const customPromptModal = document.getElementById('customPromptModal');
-const getKeyModal = document.getElementById('getKeyModal');
-const modalPasswordInput = document.getElementById('modalPasswordInput');
-const btnLogin = document.getElementById('btnLogin');
-const rateInfo = document.getElementById('rateInfo');
-function showError(msg) { errorModalMessage.innerHTML = msg; errorModal.classList.add('active'); }
-document.getElementById('btnErrorClose').addEventListener('click', () => errorModal.classList.remove('active'));
-document.getElementById('btnInfoClose').addEventListener('click', () => document.getElementById('infoModal').classList.remove('active'));
-document.getElementById('btnOpenPrompt').addEventListener('click', () => { customPromptModal.classList.add('active'); modalPasswordInput.value = ''; });
-document.getElementById('btnCancelPrompt').addEventListener('click', () => customPromptModal.classList.remove('active'));
-document.getElementById('btnConfirmPrompt').addEventListener('click', () => {
-if (modalPasswordInput.value.trim() === 'vdanndzcute') {
-customPromptModal.classList.remove('active');
-window.location.href = 'https://zalo.me/0389148483';
-} else {
-document.getElementById('infoModalMessage').innerHTML = "Mã xác nhận không chính xác!<br>Vui lòng kiểm tra lại.";
-document.getElementById('infoModal').classList.add('active');
-}
-});
-const LINK_LOCKERS = {
-taplayma: (destinationUrl) => {
-const encodedUrl = encodeURIComponent(destinationUrl);
-return `https://api.taplayma.com/st?token=28afb061-cd33-4178-98e5-161f3f88e996&url=${encodedUrl}`;
-},
-link4m: (destinationUrl) => {
-const LINK4M_API_TOKEN = '669fe8657003992f411c0e77';
-const encodedUrl = encodeURIComponent(destinationUrl);
-return `https://link4m.co/st?api=${LINK4M_API_TOKEN}&url=${encodedUrl}`;
-}
-};
-function startGetKeyFlow(lockerName) {
-const tokenArr = new Uint8Array(16);
-crypto.getRandomValues(tokenArr);
-const token = Array.from(tokenArr).map(b => b.toString(16).padStart(2,'0')).join('');
-const expireTime = Date.now() + (15 * 60 * 1000);
-localStorage.setItem('faros_auth_token', token);
-localStorage.setItem('faros_token_expire', expireTime);
-db.ref('PENDING_VERIFY/' + token).set({
-createdAt: firebase.database.ServerValue.TIMESTAMP,
-used: false
-}).catch((err) => {
-console.warn('[FAROS] Không ghi được PENDING_VERIFY, vẫn tiếp tục bằng localStorage:', err);
-}).finally(() => {
-getKeyModal.classList.remove('active');
-const currentPath = window.location.pathname;
-const folderPath = currentPath.substring(0, currentPath.lastIndexOf('/') + 1);
-const destinationUrl = window.location.origin + folderPath + 'keydaget.html?t=' + token;
-const buildUrl = LINK_LOCKERS[lockerName];
-if (!buildUrl) { console.error('[FAROS] Không tìm thấy locker:', lockerName); return; }
-window.location.href = buildUrl(destinationUrl);
-});
-}
-document.getElementById('btnOpenGetKey').addEventListener('click', () => getKeyModal.classList.add('active'));
-document.getElementById('btnCancelGetKey').addEventListener('click', () => getKeyModal.classList.remove('active'));
-document.getElementById('btnGetKeyTaplayma').addEventListener('click', () => startGetKeyFlow('taplayma'));
-document.getElementById('btnGetKeyLink4m').addEventListener('click', () => startGetKeyFlow('link4m'));
-function clearSavedLogin() {
-localStorage.removeItem('savedLoginKey');
-localStorage.removeItem('rememberMe');
-localStorage.removeItem('isLoggedIn');
-localStorage.removeItem('faros_current_key');
-localStorage.removeItem('faros_key_data');
-document.getElementById('loginKeyInput').value = '';
-document.getElementById('rememberMeCheckbox').checked = false;
-btnLogin.innerText = 'ĐĂNG NHẬP';
-btnLogin.disabled = false;
-}
-async function validateKey(inputKey, isAutoLogin = false) {
-if (!isValidKeyFormat(inputKey)) {
-showError('⚠️ Key không đúng định dạng!');
-if (!isAutoLogin) recordFailedAttempt();
-btnLogin.innerText = 'ĐĂNG NHẬP';
-btnLogin.disabled = false;
-return;
-}
-const rate = checkRateLimit();
-if (!rate.allowed) {
-showError('🔒 ' + rate.msg);
-btnLogin.innerText = 'ĐĂNG NHẬP';
-btnLogin.disabled = false;
-return;
-}
-await authReady;
-db.ref('DATABASE_FAROS_TURBOHEADAPPV1/' + inputKey).once('value', (snapshot) => {
-if (!snapshot.exists()) {
-if (!isAutoLogin) recordFailedAttempt();
-showError('⚠️ Key không tồn tại trên hệ thống!');
-clearSavedLogin();
-return;
-}
-let keyData = snapshot.val();
-let currentExpire = keyData.expiresAt || keyData.expire || null;
-if (keyData.locked === true) {
-if (!isAutoLogin) recordFailedAttempt();
-showError('🔒 Key này đã bị Admin khóa tạm thời!');
-clearSavedLogin();
-return;
-}
-if (currentExpire && Date.now() > currentExpire) {
-if (!isAutoLogin) recordFailedAttempt();
-showError('⏰ Key đã hết hạn sử dụng!');
-clearSavedLogin();
-return;
-}
-let devices = keyData.devices || {};
-let writePromise = Promise.resolve();
-if (!devices[myDeviceId]) {
-let limit = keyData.limit || 1;
-if (Object.keys(devices).length >= limit) {
-if (!isAutoLogin) recordFailedAttempt();
-showError('🚫 <strong>Key đã đạt giới hạn thiết bị tối đa!</strong><br><br>Vui lòng liên hệ Admin FAROS để mua Key mới.');
-clearSavedLogin();
-return;
-} else {
-let updates = {};
-updates['devices/' + myDeviceId] = true;
-if (!currentExpire) {
-updates['activatedAt'] = Date.now();
-if (keyData.durationHours) {
-currentExpire = Date.now() + (keyData.durationHours * 60 * 60 * 1000);
-updates['expire'] = currentExpire;
-} else if (keyData.durationDays && keyData.durationDays !== 'lifetime') {
-let daysStr = keyData.durationDays.toString();
-if(daysStr.includes('MIN')) {
-currentExpire = Date.now() + (parseInt(daysStr) * 60 * 1000);
-} else if(daysStr.includes('H')) {
-currentExpire = Date.now() + (parseInt(daysStr) * 60 * 60 * 1000);
-} else {
-currentExpire = Date.now() + (parseInt(daysStr) * 24 * 60 * 60 * 1000);
-}
-updates['expire'] = currentExpire;
-}
-}
-writePromise = db.ref('DATABASE_FAROS_TURBOHEADAPPV1/' + inputKey).update(updates);
-}
-}
-writePromise.then(() => {
-resetRateLimit();
-localStorage.setItem('isLoggedIn', 'true');
-localStorage.setItem('faros_device_id', myDeviceId);
-localStorage.setItem('faros_current_key', inputKey);
-localStorage.setItem('faros_key_data', JSON.stringify({ expiresAt: currentExpire, note: keyData.note || "" }));
-window.location.href = 'panel_faroswvdann_214.html';
-}).catch((err) => {
-showError('❌ Lỗi ghi dữ liệu đăng nhập: ' + err.message + '<br>Vui lòng thử lại.');
-btnLogin.innerText = 'ĐĂNG NHẬP';
-btnLogin.disabled = false;
-});
-}).catch((error) => {
-showError('Lỗi kết nối cơ sở dữ liệu: ' + error.message);
-btnLogin.innerText = 'ĐĂNG NHẬP';
-btnLogin.disabled = false;
-});
-}
-const savedKey = localStorage.getItem('savedLoginKey');
-const rememberMeChecked = localStorage.getItem('rememberMe') === 'true';
-if (rememberMeChecked && savedKey) {
-document.getElementById('loginKeyInput').value = savedKey;
-document.getElementById('rememberMeCheckbox').checked = true;
-btnLogin.innerText = 'ĐANG TỰ ĐỘNG ĐĂNG NHẬP...';
-btnLogin.disabled = true;
-validateKey(savedKey, true);
-}
-btnLogin.addEventListener('click', () => {
-const inputKey = document.getElementById('loginKeyInput').value.trim().toUpperCase();
-const isRemember = document.getElementById('rememberMeCheckbox').checked;
-if (!inputKey) { showError('Vui lòng điền mã Key kích hoạt!'); return; }
-const rate = checkRateLimit();
-if (!rate.allowed) {
-showError('🔒 ' + rate.msg);
-return;
-}
-btnLogin.innerText = 'ĐANG KIỂM TRA...';
-btnLogin.disabled = true;
-if (isRemember) {
-localStorage.setItem('savedLoginKey', inputKey);
-localStorage.setItem('rememberMe', 'true');
-} else {
-localStorage.removeItem('savedLoginKey');
-localStorage.removeItem('rememberMe');
-}
-validateKey(inputKey, false);
-});
-const dCanvas = document.getElementById('dustCanvas');
-const dCtx = dCanvas.getContext('2d');
-let particles = [];
-function resizeDust() { dCanvas.width = window.innerWidth; dCanvas.height = window.innerHeight; }
-window.addEventListener('resize', resizeDust); resizeDust();
-for (let i = 0; i < 40; i++) particles.push({ x: Math.random() * dCanvas.width, y: Math.random() * dCanvas.height, r: Math.random() * 2 + 0.5, vx: (Math.random() - 0.5) * 0.5, vy: (Math.random() - 0.5) * 0.5, alpha: Math.random() * 0.5 + 0.1 });
-function drawDust() { dCtx.clearRect(0, 0, dCanvas.width, dCanvas.height); particles.forEach(p => { p.x += p.vx; p.y += p.vy; if (p.x < 0 || p.x > dCanvas.width) p.vx *= -1; if (p.y < 0 || p.y > dCanvas.height) p.vy *= -1; dCtx.beginPath(); dCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2); dCtx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`; dCtx.fill(); }); requestAnimationFrame(drawDust); }
-drawDust();
-document.addEventListener('contextmenu', e => { if (e.target.tagName !== 'INPUT') e.preventDefault(); });
-document.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 's')) e.preventDefault(); });
-})();
-</script>
+    // Hiệu ứng hạt bụi chuyển động nền
+    (function(){
+      const dCanvas = document.getElementById('dustCanvas');
+      const dCtx = dCanvas.getContext('2d');
+      let particles = [];
+      
+      function resizeDust() { 
+        dCanvas.width = window.innerWidth; 
+        dCanvas.height = window.innerHeight; 
+      }
+      window.addEventListener('resize', resizeDust); 
+      resizeDust();
+
+      for (let i = 0; i < 40; i++) {
+        particles.push({ 
+          x: Math.random() * dCanvas.width, 
+          y: Math.random() * dCanvas.height, 
+          r: Math.random() * 2 + 0.5, 
+          vx: (Math.random() - 0.5) * 0.5, 
+          vy: (Math.random() - 0.5) * 0.5, 
+          alpha: Math.random() * 0.5 + 0.1 
+        });
+      }
+
+      function drawDust() { 
+        dCtx.clearRect(0, 0, dCanvas.width, dCanvas.height); 
+        particles.forEach(p => { 
+          p.x += p.vx; 
+          p.y += p.vy; 
+          if (p.x < 0 || p.x > dCanvas.width) p.vx *= -1; 
+          if (p.y < 0 || p.y > dCanvas.height) p.vy *= -1; 
+          dCtx.beginPath(); 
+          dCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2); 
+          dCtx.fillStyle = `rgba(255, 159, 10, ${p.alpha})`; 
+          dCtx.fill(); 
+        }); 
+        requestAnimationFrame(drawDust); 
+      }
+      drawDust();
+
+      // Chặn F12 & Chuột phải nhẹ
+      document.addEventListener('contextmenu', e => e.preventDefault());
+      document.addEventListener('keydown', e => { 
+        if ((e.ctrlKey || e.metaKey) && (e.key === 'u' || e.key === 's')) e.preventDefault(); 
+      });
+    })();
+  </script>
 </body>
 </html>
